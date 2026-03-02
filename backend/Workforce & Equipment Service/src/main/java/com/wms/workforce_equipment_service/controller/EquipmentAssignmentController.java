@@ -15,7 +15,7 @@ import java.util.List;
  * Controller for handling equipment assignment requests.
  */
 @RestController
-@RequestMapping("/api/equipment-assignments")
+@RequestMapping("/api/v1/workforce-equipment/equipment-assignments")
 @RequiredArgsConstructor
 public class EquipmentAssignmentController {
 

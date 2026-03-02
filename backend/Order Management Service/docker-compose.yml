@@ -24,7 +24,8 @@ services:
       - DB_URL=jdbc:mysql://mysql:3306/order_service_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo
       - DB_USERNAME=root
       - DB_PASSWORD=acpt
-      - INVENTORY_SERVICE_URL=http://host.docker.internal:8080 # Points to host machine if Inventory Service is running there
+      - EUREKA_URI=http://13.53.95.161:8761/eureka/
+      - INVENTORY_SERVICE_URL=http://13.53.95.161:8222/inventory-service # Connect to inventory service through Gateway
     depends_on:
       mysql:
         condition: service_healthy

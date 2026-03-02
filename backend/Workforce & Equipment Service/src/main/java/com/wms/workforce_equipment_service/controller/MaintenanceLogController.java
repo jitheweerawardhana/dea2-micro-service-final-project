@@ -15,7 +15,7 @@ import java.util.List;
  * Controller for handling maintenance log requests.
  */
 @RestController
-@RequestMapping("/api/maintenance-logs")
+@RequestMapping("/api/v1/workforce-equipment/maintenance-logs")
 @RequiredArgsConstructor
 public class MaintenanceLogController {
 

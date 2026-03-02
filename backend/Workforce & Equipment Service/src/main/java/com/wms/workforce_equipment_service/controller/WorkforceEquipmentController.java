@@ -15,7 +15,7 @@ import java.util.List;
  * Controller for handling equipment related requests.
  */
 @RestController
-@RequestMapping("/api/equipments")
+@RequestMapping("/api/v1/workforce-equipment/equipments")
 @RequiredArgsConstructor
 public class WorkforceEquipmentController {
 

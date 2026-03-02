@@ -15,7 +15,7 @@ import java.util.List;
  * Controller for handling worker related requests.
  */
 @RestController
-@RequestMapping("/api/workers")
+@RequestMapping("/api/v1/workforce-equipment/workers")
 @RequiredArgsConstructor
 public class WorkerController {
 
