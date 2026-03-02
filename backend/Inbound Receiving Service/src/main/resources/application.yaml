@@ -35,7 +35,7 @@ eureka:
   instance:
     # Forces Eureka to use the Public IP instead of internal network
     prefer-ip-address: true
-    ip-address: 4.235.123.21
+    ip-address: 13.229.61.136
 
     # Unique ID to prevent conflicts on restart
     instance-id: ${spring.application.name}:${random.value}
