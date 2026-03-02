@@ -3,6 +3,9 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: inventory-management-service
+  cloud:
+    discovery:
+      enabled: true
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/inventory_management_db}
     username: ${DB_USERNAME:wms}
@@ -30,6 +33,7 @@ server:
 # ── Eureka Client Configuration ──────────────────────────────────────────────
 eureka:
   client:
+    enabled: true
     serviceUrl:
       defaultZone: http://131.163.97.60:8761/eureka/
     fetch-registry: true
