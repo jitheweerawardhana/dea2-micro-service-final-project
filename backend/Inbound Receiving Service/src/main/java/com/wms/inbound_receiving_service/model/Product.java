@@ -1,26 +1,17 @@
 package com.wms.inbound_receiving_service.model;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Entity
-@Table(name = "products")
-@Getter
-@Setter
+@Data // Generates getProductId()
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Product {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long productId;
-
+    private Long productId;     // Matches the PK in your Product Service
     private String productName;
     private String skuCode;
     private String category;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InboundReceiptItem> receiptItems = new ArrayList<>();
 }

@@ -28,9 +28,9 @@ public class InboundReceipt {
 
     private String status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false)
-    private Supplier supplier;
+    // Refactored: Store only the ID from the external Supplier Service
+    private Long supplierId;
+
     private Long shipmentId;
 
     @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, orphanRemoval = true)

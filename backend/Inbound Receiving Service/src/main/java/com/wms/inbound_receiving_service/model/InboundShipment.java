@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
+
 @Entity
 @Table(name = "inbound_shipments")
 @Getter

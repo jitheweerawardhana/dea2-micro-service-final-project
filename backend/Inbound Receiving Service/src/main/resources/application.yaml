@@ -1,4 +1,7 @@
-# Edit database name, username, password, and host/port below to match your PostgreSQL setup
+server:
+  port: 8090
+  address: 0.0.0.0  # Allows the app to listen on all network interfaces for AWS/Azure
+
 spring:
   application:
     name: inbound-receiving-service
@@ -15,10 +18,34 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+# --- Added Microservice External URLs ---
+app:
+  supplier-service-url: http://your-supplier-ec2-ip:8081
+  product-service-url: http://your-product-ec2-ip:8082
+
+# --- Eureka Client Configuration ---
+eureka:
+  client:
+    serviceUrl:
+      # Points to your Eureka Server
+      defaultZone: http://131.163.97.60:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    # Forces Eureka to use the Public IP instead of internal network
+    prefer-ip-address: true
+    ip-address: 4.235.123.21
+
+    # Unique ID to prevent conflicts on restart
+    instance-id: ${spring.application.name}:${random.value}
+
+    # Fast failure detection for the Gateway
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
   api-docs:
     path: /inbound_service
-server:
-  port: 8090

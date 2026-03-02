@@ -1,26 +1,17 @@
 package com.wms.inbound_receiving_service.model;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Entity
-@Table(name = "suppliers")
-@Getter
-@Setter
+@Data // Generates getSupplierId() and getSupplierName()
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Supplier {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long supplierId;
-
+    private Long supplierId;   // Matches the PK in your Supplier Service
     private String supplierName;
     private String contactNo;
     private String address;
-
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InboundReceipt> receipts = new ArrayList<>();
 }
