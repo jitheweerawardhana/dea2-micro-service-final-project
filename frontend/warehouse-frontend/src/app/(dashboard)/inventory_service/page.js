@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
+import SettingsBackupRestoreIcon from "@mui/icons-material/SettingsBackupRestore";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
 import TuneIcon from "@mui/icons-material/Tune";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -22,6 +24,7 @@ import {
 import {
   getAllInventories,
   getAllAdjustments,
+  getExpiringSoon,
   getLowStockItems,
 } from "@/services/inventory";
 
@@ -50,6 +53,30 @@ const sections = [
     gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
     countKey: "inventories",
   },
+  {
+    label: "Low Stock Alerts",
+    description: "Monitor items below threshold and prioritize replenishment",
+    path: "/inventory_service/low-stock",
+    icon: <WarningAmberIcon />,
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+    countKey: "lowStock",
+  },
+  {
+    label: "Expiring Items",
+    description: "Track inventory nearing expiry to reduce product waste",
+    path: "/inventory_service/expiring",
+    icon: <EventBusyIcon />,
+    gradient: "linear-gradient(135deg, #fb7185 0%, #ec4899 100%)",
+    countKey: "expiring",
+  },
+  {
+    label: "Stock Operations",
+    description: "Run receiving, picking, reserve, release and damage operations",
+    path: "/inventory_service/stock-operations",
+    icon: <SettingsBackupRestoreIcon />,
+    gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+    countKey: "adjustments",
+  },
 ];
 
 export default function InventoryServicePage() {
@@ -58,22 +85,25 @@ export default function InventoryServicePage() {
     inventories: null,
     adjustments: null,
     lowStock: null,
+    expiring: null,
   });
   const [loadingCounts, setLoadingCounts] = useState(true);
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [invRes, adjRes, lowRes] = await Promise.allSettled([
+        const [invRes, adjRes, lowRes, expRes] = await Promise.allSettled([
           getAllInventories(),
           getAllAdjustments(),
           getLowStockItems(),
+          getExpiringSoon(30),
         ]);
 
         setCounts({
           inventories: invRes.status === "fulfilled" ? invRes.value.data.length : null,
           adjustments: adjRes.status === "fulfilled" ? adjRes.value.data.length : null,
           lowStock: lowRes.status === "fulfilled" ? lowRes.value.data.length : null,
+          expiring: expRes.status === "fulfilled" ? expRes.value.data.length : null,
         });
       } finally {
         setLoadingCounts(false);
@@ -114,8 +144,8 @@ export default function InventoryServicePage() {
           </Typography>
         </Box>
         <Typography variant="body1" sx={{ color: "#64748b", maxWidth: 600 }}>
-          Manage warehouse stock, inventory receiving, and adjustments through
-          one inventory operations hub.
+          Manage warehouse stock, receiving, low-stock alerts, expiries, and
+          stock adjustments through one inventory operations hub.
         </Typography>
       </Box>
 
