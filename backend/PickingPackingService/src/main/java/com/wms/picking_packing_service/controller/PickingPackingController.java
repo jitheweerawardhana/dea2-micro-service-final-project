@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -20,9 +21,12 @@ import com.wms.picking_packing_service.services.PickingPackingService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 
 @RestController
 @RequestMapping("/api/v1/pick-pack")
+@Validated
 @Tag(name = "Picking & Packing Management", description = "APIs for managing warehouse picking and packing operations")
 public class PickingPackingController{
     private final PickingPackingService service;
@@ -38,7 +42,7 @@ public class PickingPackingController{
     @PostMapping
     @Operation(summary = "Create picking task", 
                description = "🔵 CALLED BY: Order Service → Creates new picking/packing task for an order")
-    public ResponseEntity<PickingPackingDTO> create(@RequestBody PickingPackingDTO dto) {
+    public ResponseEntity<PickingPackingDTO> create(@Valid @RequestBody PickingPackingDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.createPickingTask(dto));
     }
 
@@ -59,7 +63,7 @@ public class PickingPackingController{
     @PutMapping("/{id}")
     @Operation(summary = "Update picking task", 
                description = "Update picking/packing task details")
-    public ResponseEntity<PickingPackingDTO> update(@PathVariable Long id, @RequestBody PickingPackingDTO dto) {
+    public ResponseEntity<PickingPackingDTO> update(@PathVariable Long id, @Valid @RequestBody PickingPackingDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
@@ -74,7 +78,7 @@ public class PickingPackingController{
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update task status", 
                description = "Manually update status (use workflow endpoints instead)")
-    public ResponseEntity<PickingPackingDTO> updateStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<PickingPackingDTO> updateStatus(@PathVariable Long id, @RequestParam @NotBlank String status) {
         return ResponseEntity.ok(service.updateStatus(id, status));
     }
 
@@ -85,7 +89,7 @@ public class PickingPackingController{
     @GetMapping("/status/{status}")
     @Operation(summary = "Get tasks by status", 
                description = "Get tasks with specific status (PENDING, PICKING, PICKED, PACKING, COMPLETED)")
-    public ResponseEntity<List<PickingPackingDTO>> getByStatus(@PathVariable String status) {
+    public ResponseEntity<List<PickingPackingDTO>> getByStatus(@PathVariable @NotBlank String status) {
         return ResponseEntity.ok(service.getByStatus(status));
     }
 

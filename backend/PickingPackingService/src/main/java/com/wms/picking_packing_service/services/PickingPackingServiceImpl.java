@@ -3,8 +3,11 @@ package com.wms.picking_packing_service.services;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,22 @@ import com.wms.picking_packing_service.repositories.PickingPackingRepository;
 
 @Service
 public class PickingPackingServiceImpl implements PickingPackingService {
+
+    private static final Logger log = LoggerFactory.getLogger(PickingPackingServiceImpl.class);
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_PICKING = "PICKING";
+    private static final String STATUS_PICKED = "PICKED";
+    private static final String STATUS_PACKING = "PACKING";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String STATUS_CANCELLED = "CANCELLED";
+    private static final Set<String> VALID_STATUSES = Set.of(
+            STATUS_PENDING,
+            STATUS_PICKING,
+            STATUS_PICKED,
+            STATUS_PACKING,
+            STATUS_COMPLETED,
+            STATUS_CANCELLED
+    );
 
     private final PickingPackingRepository repository;
     private final OrderClient orderClient;
@@ -57,20 +76,15 @@ public class PickingPackingServiceImpl implements PickingPackingService {
             throw new BadRequestException("Order not found with ID: " + dto.getOrderId());
         }
 
-        // Verify worker exists and is available
-        try {
-            if (!workerClient.isWorkerAvailable(dto.getWorkerId())) {
-                throw new BadRequestException("Worker is not available with ID: " + dto.getWorkerId());
-            }
-        } catch (Exception e) {
-            throw new BadRequestException("Worker not found with ID: " + dto.getWorkerId());
+        if (!workerClient.isWorkerAvailable(dto.getWorkerId())) {
+            throw new BadRequestException("Worker is not available with ID: " + dto.getWorkerId());
         }
 
         // Create picking packing entity
         PickingPacking entity = new PickingPacking();
         entity.setOrderId(dto.getOrderId());
         entity.setWorkerId(dto.getWorkerId());
-        entity.setStatus("PENDING"); // Initial status
+        entity.setStatus(STATUS_PENDING);
         entity.setPickDate(null);
         entity.setPackDate(null);
 
@@ -108,18 +122,13 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         PickingPacking entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
 
-        // Validate status
-        List<String> validStatuses = List.of("PENDING", "PICKING", "PICKED", "PACKING", "PACKED", "COMPLETED", "CANCELLED");
-        if (!validStatuses.contains(status.toUpperCase())) {
-            throw new BadRequestException("Invalid status: " + status);
-        }
-
-        entity.setStatus(status.toUpperCase());
+        String normalizedStatus = normalizeStatus(status);
+        entity.setStatus(normalizedStatus);
 
         // Update timestamps based on status
-        if ("PICKING".equals(status.toUpperCase())) {
+        if (STATUS_PICKING.equals(normalizedStatus)) {
             entity.setPickDate(LocalDateTime.now());
-        } else if ("PACKING".equals(status.toUpperCase())) {
+        } else if (STATUS_PACKING.equals(normalizedStatus)) {
             entity.setPackDate(LocalDateTime.now());
         }
 
@@ -127,12 +136,11 @@ public class PickingPackingServiceImpl implements PickingPackingService {
 
         // Update order status in Order Service
         try {
-            if ("COMPLETED".equals(status.toUpperCase())) {
+            if (STATUS_COMPLETED.equals(normalizedStatus)) {
                 orderClient.updateOrderStatus(entity.getOrderId(), "READY_TO_SHIP");
             }
         } catch (Exception e) {
-            // Log error but don't fail the operation
-            System.err.println("Failed to update order status: " + e.getMessage());
+            log.warn("Failed to update order status for orderId={}: {}", entity.getOrderId(), e.getMessage());
         }
 
         return mapToDTO(updated);
@@ -164,7 +172,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
             entity.setPackDate(dto.getPackDate());
         }
         if (dto.getStatus() != null) {
-            entity.setStatus(dto.getStatus());
+            entity.setStatus(normalizeStatus(dto.getStatus()));
         }
 
         // Update items if provided
@@ -246,7 +254,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
 
     @Override
     public List<PickingPackingDTO> getByStatus(String status) {
-        return repository.findByStatus(status.toUpperCase()).stream()
+        return repository.findByStatus(normalizeStatus(status)).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -257,11 +265,11 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         PickingPacking entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
 
-        if (!"PENDING".equals(entity.getStatus())) {
+        if (!STATUS_PENDING.equals(normalizeStatus(entity.getStatus()))) {
             throw new BadRequestException("Cannot start picking. Current status: " + entity.getStatus());
         }
 
-        entity.setStatus("PICKING");
+        entity.setStatus(STATUS_PICKING);
         entity.setPickDate(LocalDateTime.now());
 
         PickingPacking updated = repository.save(entity);
@@ -275,7 +283,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         PickingPacking entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
 
-        if (!"PICKING".equals(entity.getStatus())) {
+        if (!STATUS_PICKING.equals(normalizeStatus(entity.getStatus()))) {
             throw new BadRequestException("Cannot complete picking. Current status: " + entity.getStatus());
         }
 
@@ -293,12 +301,12 @@ public class PickingPackingServiceImpl implements PickingPackingService {
                 try {
                     inventoryClient.updateInventoryAfterPicking(item.getItemId(), item.getQuantityPicked());
                 } catch (Exception e) {
-                    System.err.println("Failed to update inventory for item " + item.getItemId() + ": " + e.getMessage());
+                    log.warn("Failed to update inventory for itemId={}: {}", item.getItemId(), e.getMessage());
                 }
             }
         }
 
-        entity.setStatus("PICKED");
+        entity.setStatus(STATUS_PICKED);
 
         PickingPacking updated = repository.save(entity);
 
@@ -311,11 +319,11 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         PickingPacking entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
 
-        if (!"PICKED".equals(entity.getStatus())) {
+        if (!STATUS_PICKED.equals(normalizeStatus(entity.getStatus()))) {
             throw new BadRequestException("Cannot start packing. Current status: " + entity.getStatus());
         }
 
-        entity.setStatus("PACKING");
+        entity.setStatus(STATUS_PACKING);
         entity.setPackDate(LocalDateTime.now());
 
         PickingPacking updated = repository.save(entity);
@@ -329,7 +337,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         PickingPacking entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
 
-        if (!"PACKING".equals(entity.getStatus())) {
+        if (!STATUS_PACKING.equals(normalizeStatus(entity.getStatus()))) {
             throw new BadRequestException("Cannot complete packing. Current status: " + entity.getStatus());
         }
 
@@ -338,7 +346,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
             throw new BadRequestException("Packing details are required to complete packing");
         }
 
-        entity.setStatus("COMPLETED");
+        entity.setStatus(STATUS_COMPLETED);
 
         PickingPacking updated = repository.save(entity);
 
@@ -346,7 +354,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         try {
             orderClient.updateOrderStatus(entity.getOrderId(), "READY_TO_SHIP");
         } catch (Exception e) {
-            System.err.println("Failed to update order status: " + e.getMessage());
+            log.warn("Failed to update order status for orderId={}: {}", entity.getOrderId(), e.getMessage());
         }
 
         return mapToDTO(updated);
@@ -392,5 +400,22 @@ public class PickingPackingServiceImpl implements PickingPackingService {
         }
 
         return dto;
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            throw new BadRequestException("Status is required");
+        }
+
+        String normalizedStatus = status.trim().toUpperCase();
+        if ("PACKED".equals(normalizedStatus)) {
+            normalizedStatus = STATUS_COMPLETED;
+        }
+
+        if (!VALID_STATUSES.contains(normalizedStatus)) {
+            throw new BadRequestException("Invalid status: " + status);
+        }
+
+        return normalizedStatus;
     }
 }

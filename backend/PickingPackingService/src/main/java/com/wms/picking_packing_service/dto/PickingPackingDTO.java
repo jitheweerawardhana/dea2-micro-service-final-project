@@ -1,15 +1,11 @@
 package com.wms.picking_packing_service.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+
 public class PickingPackingDTO {
     private Long pickPackId;
     private Long orderId;
@@ -18,9 +14,13 @@ public class PickingPackingDTO {
     private LocalDateTime pickDate;
     private LocalDateTime packDate;
 
+    @Size(max = 20, message = "status must be at most 20 characters")
     private String status;
 
+    @Valid
     private List<PickingItemDTO> items;
+
+    @Valid
     private List<PackingDetailsDTO> packingDetails;
 
     public void setPickPackId(Long pickPackId) {
